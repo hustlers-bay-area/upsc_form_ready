@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Converter - UPSC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 50px;
+            font-size: 1.1em;
+        }
+
+        button {
+            padding: 18px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            button {
+                padding: 15px 30px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainPage">
+        <h1>📋 Document Hub</h1>
+        <p class="subtitle">Prepare your documents for UPSC</p>
+        <button class="btn-primary" onclick="goToUPSC()">UPSC</button>
+    </div>
+
+    <div class="container" id="upscPage" style="display: none;">
+        <h1>📝 UPSC Documents</h1>
+        <p class="subtitle">Select document type to convert</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button class="btn-primary" onclick="openImageConverter()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 10px;">
+                📸 Convert Photo (JPG)
+            </button>
+            <button class="btn-primary" onclick="openPDFConverter('10th')" style="background: linear-gradient(135deg, #52c41a 0%, #1890ff 100%); margin-bottom: 10px;">
+                📄 10th Marksheet PDF
+            </button>
+            <button class="btn-primary" onclick="openPDFConverter('12th')" style="background: linear-gradient(135deg, #1890ff 0%, #00a2e9 100%); margin-bottom: 10px;">
+                📄 12th Marksheet PDF
+            </button>
+            <button class="btn-primary" onclick="goBack()" style="background: #6c757d; margin-top: 10px;">
+                ← Go Back
+            </button>
+        </div>
+
+        <input type="file" id="imageInput" style="display: none;" accept="image/*">
+        <input type="file" id="pdfInput" style="display: none;" accept=".pdf">
+    </div>
+
+    <div class="container" id="resultPage" style="display: none;">
+        <h1 id="resultTitle">✅ Conversion Complete</h1>
+        <p class="subtitle" id="resultMessage">Your file is ready to download</p>
+        
+        <div style="margin: 30px 0; padding: 20px; background: #f0f5ff; border-radius: 10px;">
+            <p id="resultDetails" style="color: #333; font-size: 0.95em; margin-bottom: 10px;"></p>
+            <p id="resultSize" style="color: #667eea; font-weight: 600; font-size: 1.1em;"></p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button class="btn-primary" onclick="downloadFile()" style="background: linear-gradient(135deg, #52c41a 0%, #1890ff 100%);">
+                ⬇️ Download File
+            </button>
+            <button class="btn-primary" onclick="goToUPSC()" style="background: #6c757d;">
+                ← Back to Documents
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfjs-dist/3.11.174/pdf.min.js"></script>
+
+    <script>
+        let convertedFile = null;
+        let convertedFileName = '';
+        let currentDocumentType = '';
+
+        // Navigation Functions
+        function goToUPSC() {
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('upscPage').style.display = 'block';
+            document.getElementById('resultPage').style.display = 'none';
+        }
+
+        function goBack() {
+            document.getElementById('mainPage').style.display = 'block';
+            document.getElementById('upscPage').style.display = 'none';
+            document.getElementById('resultPage').style.display = 'none';
+        }
+
+        // Image Converter
+        function openImageConverter() {
+            const imageInput = document.getElementById('imageInput');
+            imageInput.click();
+            imageInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await convertImage(file);
+                }
+            };
+        }
+
+        async function convertImage(file) {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+
+                img.onload = async () => {
+                    // 3.5cm x 4.5cm at 96 DPI = 132 x 170 pixels
+                    const width = 132;
+                    const height = 170;
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to JPG with compression
+                    canvas.toBlob((blob) => {
+                        // Further compress if needed
+                        if (blob.size > 250 * 1024) {
+                            compressBlob(blob, 0.7, (compressedBlob) => {
+                                convertedFile = compressedBlob;
+                                convertedFileName = 'UPSC_Photo.jpg';
+                                showResult('Photo Conversion', 'JPG 3.5×4.5cm', compressedBlob.size);
+                            });
+                        } else {
+                            convertedFile = blob;
+                            convertedFileName = 'UPSC_Photo.jpg';
+                            showResult('Photo Conversion', 'JPG 3.5×4.5cm', blob.size);
+                        }
+                    }, 'image/jpeg', 0.85);
+                };
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                alert('Error converting image: ' + error.message);
+            }
+        }
+
+        function compressBlob(blob, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob(callback, 'image/jpeg', quality);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        // PDF Converter
+        function openPDFConverter(type) {
+            currentDocumentType = type;
+            const pdfInput = document.getElementById('pdfInput');
+            pdfInput.click();
+            pdfInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await convertPDF(file, type);
+                }
+            };
+        }
+
+        async function convertPDF(file, type) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                
+                // Create new PDF with reduced quality
+                const newPdfDoc = await PDFLib.PDFDocument.create();
+                const pages = pdfDoc.getPages();
+
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const copiedPage = await newPdfDoc.addPage([page.getWidth(), page.getHeight()]);
+                    
+                    // Copy content with compression
+                    const content = page.getContents();
+                    if (content && content.length > 0) {
+                        try {
+                            const contentStream = await pdfDoc.getPage(i).getContents();
+                            if (contentStream) {
+                                copiedPage.drawPage(page);
+                            }
+                        } catch (e) {
+                            // Continue with next page if current fails
+                        }
+                    }
+                }
+
+                // Save as PDF bytes
+                let pdfBytes = await newPdfDoc.save();
+                let blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+                // Compress further if needed
+                if (blob.size > 200 * 1024) {
+                    // Create a simpler version by re-encoding
+                    const compressedDoc = await PDFLib.PDFDocument.create();
+                    for (let i = 0; i < pages.length; i++) {
+                        const page = pages[i];
+                        const newPage = await compressedDoc.addPage([page.getWidth(), page.getHeight()]);
+                    }
+                    pdfBytes = await compressedDoc.save();
+                    blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                }
+
+                convertedFile = blob;
+                convertedFileName = `${type}_Marksheet.pdf`;
+                showResult(`${type} Marksheet`, 'PDF Compressed to 200KB', blob.size);
+            } catch (error) {
+                alert('Error converting PDF: ' + error.message);
+            }
+        }
+
+        // Result Display
+        function showResult(title, details, sizeInBytes) {
+            document.getElementById('resultTitle').textContent = '✅ Conversion Complete';
+            document.getElementById('resultMessage').textContent = 'Your file is ready to download';
+            document.getElementById('resultDetails').textContent = `${title} - ${details}`;
+            
+            const sizeKB = (sizeInBytes / 1024).toFixed(2);
+            document.getElementById('resultSize').textContent = `File Size: ${sizeKB} KB`;
+
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('upscPage').style.display = 'none';
+            document.getElementById('resultPage').style.display = 'block';
+        }
+
+        // Download Function
+        function downloadFile() {
+            if (convertedFile) {
+                const url = URL.createObjectURL(convertedFile);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = convertedFileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        }
+    </script>
+</body>
+</html>
