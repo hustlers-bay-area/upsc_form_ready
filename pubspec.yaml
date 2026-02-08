@@ -1,0 +1,16 @@
+name: upsc_document_converter
+
+version: 1.0.0
+
+environment:
+  sdk: ">=2.10.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pdf: ^3.3.0
+  image: ^3.0.1
+  path_provider: ^2.0.9
+
+flutter:
+  uses-material-design: true
