@@ -19,15 +19,15 @@
       border-radius: 15px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       padding: 40px;
-      max-width: 500px;
+      max-width: 600px;
       width: 100%;
       text-align: center;
     }
     h1 { color: #333; margin-bottom: 15px; font-size: 2em; }
     .subtitle { color: #666; margin-bottom: 30px; font-size: 1.1em; }
     button {
-      padding: 15px 30px;
-      font-size: 1em;
+      padding: 12px 20px;
+      font-size: 0.95em;
       border: none;
       border-radius: 10px;
       cursor: pointer;
@@ -69,11 +69,25 @@
   <div class="container" id="neetPage" style="display:none;">
     <h1>🩺 NEET Documents</h1>
     <p class="subtitle">Upload required NEET documents</p>
-    <button class="btn-primary" onclick="uploadNEETFile('photo')">📸 Photograph (10–200 kb JPG)</button>
-    <button class="btn-primary" onclick="uploadNEETFile('signature')">✍️ Signature (10–100 kb JPG)</button>
-    <button class="btn-primary" onclick="uploadNEETFile('thumb')">🖐️ Thumb Impressions (10–200 kb JPG)</button>
-    <button class="btn-primary" onclick="uploadNEETFile('certificate')">📄 Certificates (50–300 kb PDF)</button>
-    <button class="btn-primary" onclick="goBack()" style="background:#6c757d;">← Go Back</button>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn-primary" onclick="uploadNEETFile('photo')">📸 Photograph (10–200 kb JPG)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('signature')">✍️ Signature (10–100 kb JPG)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('thumb')">🖐️ Finger & Thumb Impressions (10–200 kb JPG)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('category')">📄 Category Certificate (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('class10cert')">📄 Class X Certificate (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('class10marks')">📄 Class X Marksheet (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('conversion')">📄 Conversion Certificate (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('identity')">🪪 Identity Proof (10–200 kb JPG)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('pwd')">📄 PwD Certificate (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('address')">📄 Address Proof (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('nri')">📄 NRI/OCI/Foreigner Proof (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('scribeSignature')">✍️ Scribe Signature (10–100 kb JPG)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('scribeQualification')">📄 Scribe Qualification Certificate (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('scribeUndertaking')">📄 Scribe Undertaking (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('scribeIdentity')">🪪 Scribe Identity Proof (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="uploadNEETFile('physicalLimitation')">📄 Certificate of Physical Limitation (50–300 kb PDF)</button>
+      <button class="btn-primary" onclick="goBack()" style="background:#6c757d;">← Go Back</button>
+    </div>
     <input type="file" id="neetFileInput" style="display:none;">
     <div class="processing" id="neetProcessingStatus">⏳ Validating your file...</div>
   </div>
@@ -89,7 +103,6 @@
     <button class="btn-primary" onclick="goBack()" style="background:#6c757d;">← Back</button>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script>
     let convertedFile = null;
     let convertedFileName = '';
@@ -117,7 +130,7 @@
     // NEET Upload Validation
     function uploadNEETFile(type){
       const input=document.getElementById('neetFileInput');
-      input.accept=(type==='certificate')?'.pdf':'image/jpeg';
+      input.accept=(['photo','signature','thumb','identity','scribeSignature'].includes(type))?'.jpg,.jpeg':'.pdf';
       input.click();
       input.onchange=(e)=>{
         const file=e.target.files[0]; if(!file) return;
@@ -126,41 +139,7 @@
           case 'photo':minSize=10*1024;maxSize=200*1024;break;
           case 'signature':minSize=10*1024;maxSize=100*1024;break;
           case 'thumb':minSize=10*1024;maxSize=200*1024;break;
-          case 'certificate':minSize=50*1024;maxSize=300*1024;break;
-        }
-        if(file.size<minSize||file.size>maxSize){alert(`Invalid size for ${type}.`);return;}
-        document.getElementById('neetProcessingStatus').style.display='block';
-        setTimeout(()=>{
-          document.getElementById('neetProcessingStatus').style.display='none';
-          convertedFile=file; convertedFileName=`NEET_${type}.${type==='certificate'?'pdf':'jpg'}`;
-          showResult(`NEET ${type}`,`Validated ${type}`,file.size,'File meets NEET requirements');
-        },1000);
-      };
-    }
-
-    // Result Display
-    function showResult(title,details,sizeInBytes,note){
-      document.getElementById('resultTitle').textContent='✅ Conversion Complete';
-      document.getElementById('resultMessage').textContent='Your file is ready to download';
-      document.getElementById('resultDetails').textContent=`${title} - ${details}`;
-      document.getElementById('resultSize').textContent=`File Size: ${(sizeInBytes/1024).toFixed(2)} KB`;
-      document.getElementById('resultQuality').textContent=`📸 ${note}`;
-      document.getElementById('mainPage').style.display='none';
-      document.getElementById('upscPage').style.display='none';
-      document.getElementById('neetPage').style.display='none';
-      document.getElementById('resultPage').style.display='block';
-    }
-
-    // Download
-    function downloadFile(){
-      if(convertedFile){
-        const url=URL.createObjectURL(convertedFile);
-        const link=document.createElement('a');
-        link.href=url; link.download=convertedFileName;
-        document.body.appendChild(link); link.click();
-        document.body.removeChild(link); URL.revokeObjectURL(url);
-      }
-    }
+          case 'category':case '
   </script>
 </body>
 </html>
